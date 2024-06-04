@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django_guid",
     "common",
     "users",
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -56,6 +57,11 @@ MIDDLEWARE = [
     "csp.middleware.CSPMiddleware",
     "defender.middleware.FailedLoginMiddleware",
     "django_guid.middleware.guid_middleware",
+    'corsheaders.middleware.CorsMiddleware',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
 ]
 
 ROOT_URLCONF = "purrfect_pix.urls"
@@ -217,7 +223,13 @@ CSP_FONT_SRC = [
     "'self'",
     "'unsafe-inline'",
 ] + [f"*{host}" if host.startswith(".") else host for host in ALLOWED_HOSTS]
-CSP_IMG_SRC = ["'self'"]
+CSP_IMG_SRC = [
+    "'self'",
+    "http://localhost:3000",
+    "http://gc.kis.v2.scr.kaspersky-labs.com",
+    "ws://gc.kis.v2.scr.kaspersky-labs.com",
+    "https://cdn2.thecatapi.com",
+]
 
 # Django-defender
 DEFENDER_LOGIN_FAILURE_LIMIT = 3

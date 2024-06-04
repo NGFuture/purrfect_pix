@@ -49,11 +49,19 @@ const Home = () => {
       </Button>
       {showBugComponent && showBugComponent.field.notexist}
       <h2>CATS</h2>
-      <ul>
+      <div className="row">
         {cats.map((cat) => (
-          <li key={cat.id}>{cat.name}</li>
+          <div className="col-md-4" key={cat.id}>
+            <div className="card">
+              <img className="card-img-top" src={cat.url} alt="Cat" />
+              <div className="card-body">
+                <h5 className="card-title">Cat</h5>
+                <p className="card-text">{cat.url}</p>
+              </div>
+            </div>
+          </div>
         ))}
-      </ul>
+      </div>
     </>
   );
 };

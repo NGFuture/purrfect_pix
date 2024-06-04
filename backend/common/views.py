@@ -38,16 +38,51 @@ class CatsViewSet(viewsets.ViewSet):
         url_path="list-cats",
     )
     def list_cats(self, request):
-        return Response(
-            {
-                "items": [
-                    {"name": "Fluffy", "breed": "Siamese"},
-                    {"name": "Whiskers", "breed": "Tabby"},
-                    {"name": "Socks", "breed": "Calico"},
-                ]
-            },
-            status=status.HTTP_200_OK,
-        )
+        skip = int(request.query_params.get('skip', 0))
+        limit = int(request.query_params.get('limit', 12))
+        favorite = request.query_params.get('favorite', None)
+        breeds_filter = request.query_params.get('breeds', None)
+        all_breeds = Breed.objects.all()
+        if favorite is not None or breeds_filter is not None:
+            breeds_ids = breeds_filter.split(",") if breeds_filter is not None else all_breeds.values_list('id', flat=True)
+            cats = Cat.objects.filter(favorite=(favorite=="true"), breeds__id__in=breeds_ids)[skip:skip+limit]
+
+            count = Cat.objects.filter(favorite=(favorite=="true"), breeds__id__in=breeds_ids).count()
+        else:
+            cats = Cat.objects.all()[skip:skip+limit]
+            count = Cat.objects.count()
+        data = {
+            'count': count,
+            'items': [
+                {
+                    'id': cat.id,
+                    'url': cat.url,
+                    'width': cat.width,
+                    'height': cat.height,
+                    'name': cat.name,
+                    'description': cat.description,
+                    'favorite': cat.favorite,
+                    'breeds': [
+                        {
+                            'id': breed.id,
+                            'name': breed.name,
+                            'temperament': breed.temperament,
+                            'origin': breed.origin,
+                            'description': breed.description,
+                            'life_span': breed.life_span,
+                        }
+                        for breed in cat.breeds.all()
+                    ]
+                } for cat in cats
+            ],
+            'breeds': [
+                {
+                    'id': breed.id,
+                    'name': breed.name,
+                } for breed in all_breeds
+            ]
+        }
+        return Response(data, status=status.HTTP_200_OK)
     @action(
         detail=False,
         methods=["get"],
@@ -79,7 +114,9 @@ class CatsViewSet(viewsets.ViewSet):
                     description=breed["description"],
                     life_span=breed["life_span"],
                 )
-                breed_obj.save()
+                existed_breed = Breed.objects.filter(id=breed["id"])
+                if not existed_breed:
+                    breed_obj.save()
             items.append({
                 "id": cat["id"],
                 "url": cat["url"],
@@ -89,6 +126,17 @@ class CatsViewSet(viewsets.ViewSet):
                 "description": "",
                 "breeds": breeds,
             })
+            cat_obj = Cat(
+                id=cat["id"],
+                url=cat["url"],
+                width=cat["width"],
+                height=cat["height"],
+            )
+            existed_cat = Cat.objects.filter(id=cat["id"])
+            if not existed_cat:
+                cat_obj.save()
+                for breed in breeds:
+                    cat_obj.breeds.add(breed["id"])
         return Response(
             {
                 "items": items

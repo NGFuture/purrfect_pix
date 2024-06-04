@@ -50,4 +50,5 @@ class Cat(models.Model):
     height = models.IntegerField()
     name = models.CharField(max_length=255)
     description = models.TextField()
+    favorite = models.BooleanField(default=False)
 
