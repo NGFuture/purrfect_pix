@@ -43,14 +43,18 @@ class CatsViewSet(viewsets.ViewSet):
         favorite = request.query_params.get('favorite', None)
         breeds_filter = request.query_params.get('breeds', None)
         all_breeds = Breed.objects.all()
-        if favorite is not None or breeds_filter is not None:
-            breeds_ids = breeds_filter.split(",") if breeds_filter is not None else all_breeds.values_list('id', flat=True)
-            cats = Cat.objects.filter(favorite=(favorite=="true"), breeds__id__in=breeds_ids)[skip:skip+limit]
 
-            count = Cat.objects.filter(favorite=(favorite=="true"), breeds__id__in=breeds_ids).count()
-        else:
-            cats = Cat.objects.all()[skip:skip+limit]
-            count = Cat.objects.count()
+        # Prepare filters
+        filters = {}
+        if favorite is not None:
+            filters['favorite'] = (favorite.lower() == "true")
+        if breeds_filter is not None:
+            breeds_ids = breeds_filter.split(",")
+            filters['breeds__id__in'] = breeds_ids
+
+        # Fetch filtered cats
+        cats = Cat.objects.filter(**filters)[skip:skip+limit]
+        count = Cat.objects.filter(**filters).count()
         data = {
             'count': count,
             'items': [
@@ -140,6 +144,24 @@ class CatsViewSet(viewsets.ViewSet):
         return Response(
             {
                 "items": items
+            },
+            status=status.HTTP_200_OK,
+        )
+    @action(
+        detail=True,
+        methods=["put"],
+        permission_classes=[AllowAny],
+        url_path="favorite",
+    )
+    def update_favorite(self, request, pk):
+        print(pk)
+        cat = Cat.objects.get(pk=pk)
+        cat.favorite = not cat.favorite
+        cat.save()
+        return Response(
+            {
+                "id": cat.id,
+                "favorite": cat.favorite
             },
             status=status.HTTP_200_OK,
         )
